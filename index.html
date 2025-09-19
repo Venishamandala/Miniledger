@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceTracker Pro - Student Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        accent: '#f59e0b',
+                        success: '#10b981',
+                        danger: '#ef4444'
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">FinanceTracker Pro</h1>
+                        <p class="text-xs text-gray-500">Student Edition</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600" id="userGreeting">Welcome!</span>
+                    <button onclick="logout()" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-primary to-secondary p-8 text-white text-center">
+                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Get Started</h2>
+                <p class="text-blue-100">Take control of your student finances</p>
+            </div>
+            
+            <div class="p-8">
+                <form id="authForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="studentName" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                               placeholder="Enter your full name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Institution</label>
+                        <input type="text" id="institution" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                               placeholder="Your college or university">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Budget (₹)</label>
+                        <input type="number" id="monthlyBudget" required min="1000"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                               placeholder="e.g., 15000">
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-primary hover:bg-secondary text-white py-3 rounded-lg font-medium transition-colors transform hover:scale-105">
+                        Start Tracking
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainApp" class="hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Monthly Budget</p>
+                            <p class="text-2xl font-bold text-gray-900" id="budgetDisplay">₹0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Spent</p>
+                            <p class="text-2xl font-bold text-danger" id="spentDisplay">₹0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Remaining</p>
+                            <p class="text-2xl font-bold text-success" id="remainingDisplay">₹0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Daily Average</p>
+                            <p class="text-2xl font-bold text-accent" id="averageDisplay">₹0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Monthly Progress</h3>
+                    <span class="text-sm font-medium text-gray-600" id="progressText">0% used</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Add Expense Form -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-6">Add Expense</h2>
+                        <form id="expenseForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <input type="text" id="expenseDesc" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="e.g., Lunch at cafeteria">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                <select id="expenseCategory" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Select category</option>
+                                    <option value="food">Food & Dining</option>
+                                    <option value="transport">Transportation</option>
+                                    <option value="books">Books & Supplies</option>
+                                    <option value="entertainment">Entertainment</option>
+                                    <option value="shopping">Shopping</option>
+                                    <option value="health">Health & Medical</option>
+                                    <option value="utilities">Bills & Utilities</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Amount (₹)</label>
+                                <input type="number" id="expenseAmount" required min="1" step="0.01"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="0.00">
+                            </div>
+                            
+                            <button type="submit" 
+                                    class="w-full bg-primary hover:bg-secondary text-white py-2 rounded-lg font-medium transition-colors">
+                                Add Expense
+                            </button>
+                        </form>
+
+                        <!-- Budget & Targets Section -->
+                        <div class="mt-8 pt-6 border-t border-gray-200">
+                            <h3 class="text-md font-semibold text-gray-900 mb-4">Budget & Targets</h3>
+                            
+                            <!-- Update Monthly Budget -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Budget (₹)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="newBudget" min="1000"
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                           placeholder="New budget amount">
+                                    <button onclick="updateBudget()" 
+                                            class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                        Update
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Savings Target -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Savings Target (₹)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="savingsTarget" min="100"
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                           placeholder="Monthly savings goal">
+                                    <button onclick="setSavingsTarget()" 
+                                            class="bg-success hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                        Set Goal
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Daily Spending Limit -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Daily Limit (₹)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="dailyLimit" min="50"
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                           placeholder="Daily spending limit">
+                                    <button onclick="setDailyLimit()" 
+                                            class="bg-accent hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                        Set Limit
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Target Progress Display -->
+                            <div id="targetProgress" class="space-y-3 mt-6"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spending Analysis -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-semibold text-gray-900">Spending Analysis</h2>
+                            <div class="flex space-x-2">
+                                <button onclick="switchChart('pie')" id="pieBtn" 
+                                        class="px-3 py-1 text-sm font-medium rounded-lg bg-primary text-white">
+                                    Pie Chart
+                                </button>
+                                <button onclick="switchChart('doughnut')" id="doughnutBtn"
+                                        class="px-3 py-1 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+                                    Doughnut
+                                </button>
+                            </div>
+                        </div>
+                        <div class="relative h-80">
+                            <canvas id="spendingChart"></canvas>
+                        </div>
+                        <div id="chartLegend" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Expenses -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Expenses</h2>
+                    <button onclick="clearAllExpenses()" 
+                            class="text-sm text-danger hover:text-red-700 font-medium transition-colors">
+                        Clear All
+                    </button>
+                </div>
+                <div id="expensesList" class="space-y-3">
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p>No expenses recorded yet</p>
+                        <p class="text-sm">Add your first expense to get started</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = JSON.parse(localStorage.getItem('ft_user')) || null;
+        let expenses = JSON.parse(localStorage.getItem('ft_expenses')) || [];
+        let monthlyBudget = parseFloat(localStorage.getItem('ft_budget')) || 0;
+        let savingsTarget = parseFloat(localStorage.getItem('ft_savings_target')) || 0;
+        let dailyLimit = parseFloat(localStorage.getItem('ft_daily_limit')) || 0;
+        let spendingChart = null;
+        let currentChartType = 'pie';
+
+        // Category configuration
+        const categories = {
+            food: { name: 'Food & Dining', color: '#ef4444', icon: '🍕' },
+            transport: { name: 'Transportation', color: '#3b82f6', icon: '🚌' },
+            books: { name: 'Books & Supplies', color: '#8b5cf6', icon: '📚' },
+            entertainment: { name: 'Entertainment', color: '#f59e0b', icon: '🎬' },
+            shopping: { name: 'Shopping', color: '#ec4899', icon: '🛍️' },
+            health: { name: 'Health & Medical', color: '#10b981', icon: '🏥' },
+            utilities: { name: 'Bills & Utilities', color: '#6b7280', icon: '📱' },
+            other: { name: 'Other', color: '#84cc16', icon: '📦' }
+        };
+
+        // Initialize app
+        function init() {
+            if (currentUser) {
+                showMainApp();
+            } else {
+                showAuthModal();
+            }
+        }
+
+        // Authentication
+        document.getElementById('authForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('studentName').value.trim();
+            const institution = document.getElementById('institution').value.trim();
+            const budget = parseFloat(document.getElementById('monthlyBudget').value);
+
+            if (name && institution && budget >= 1000) {
+                currentUser = { name, institution, joinDate: new Date().toISOString() };
+                monthlyBudget = budget;
+                
+                localStorage.setItem('ft_user', JSON.stringify(currentUser));
+                localStorage.setItem('ft_budget', monthlyBudget);
+                
+                showMainApp();
+                showNotification('Welcome! Your finance tracking starts now.', 'success');
+            }
+        });
+
+        function logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                showAuthModal();
+                // Clear form
+                document.getElementById('authForm').reset();
+            }
+        }
+
+        function showAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userGreeting').textContent = `Welcome, ${currentUser.name}`;
+            
+            updateDashboard();
+            updateTargetProgress();
+            renderExpenses();
+            initChart();
+            updateChart();
+        }
+
+        // Expense management
+        document.getElementById('expenseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const description = document.getElementById('expenseDesc').value.trim();
+            const category = document.getElementById('expenseCategory').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            
+            if (description && category && amount > 0) {
+                const expense = {
+                    id: Date.now(),
+                    description,
+                    category,
+                    amount,
+                    date: new Date().toISOString(),
+                    displayDate: new Date().toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    })
+                };
+                
+                expenses.unshift(expense);
+                localStorage.setItem('ft_expenses', JSON.stringify(expenses));
+                
+                this.reset();
+                updateDashboard();
+                updateTargetProgress();
+                renderExpenses();
+                updateChart();
+                
+                // Check daily limit warning
+                const today = new Date().toDateString();
+                const todayExpenses = expenses.filter(expense => 
+                    new Date(expense.date).toDateString() === today
+                );
+                const todaySpent = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                
+                if (dailyLimit > 0 && todaySpent > dailyLimit) {
+                    showNotification(`⚠️ Daily limit exceeded! Today: ₹${todaySpent.toLocaleString('en-IN')}`, 'error');
+                } else {
+                    showNotification(`₹${amount.toLocaleString('en-IN')} expense added successfully`, 'success');
+                }
+            }
+        });
+
+        // Budget and Target management
+        function updateBudget() {
+            const newBudget = parseFloat(document.getElementById('newBudget').value);
+            if (newBudget && newBudget >= 1000) {
+                monthlyBudget = newBudget;
+                localStorage.setItem('ft_budget', monthlyBudget);
+                document.getElementById('newBudget').value = '';
+                updateDashboard();
+                updateTargetProgress();
+                updateChart();
+                showNotification('Budget updated successfully', 'success');
+            } else {
+                showNotification('Please enter a valid budget amount (minimum ₹1000)', 'error');
+            }
+        }
+
+        function setSavingsTarget() {
+            const target = parseFloat(document.getElementById('savingsTarget').value);
+            if (target && target >= 100) {
+                savingsTarget = target;
+                localStorage.setItem('ft_savings_target', savingsTarget);
+                document.getElementById('savingsTarget').value = '';
+                updateTargetProgress();
+                showNotification('Savings target set successfully', 'success');
+            } else {
+                showNotification('Please enter a valid savings target (minimum ₹100)', 'error');
+            }
+        }
+
+        function setDailyLimit() {
+            const limit = parseFloat(document.getElementById('dailyLimit').value);
+            if (limit && limit >= 50) {
+                dailyLimit = limit;
+                localStorage.setItem('ft_daily_limit', dailyLimit);
+                document.getElementById('dailyLimit').value = '';
+                updateTargetProgress();
+                showNotification('Daily spending limit set successfully', 'success');
+            } else {
+                showNotification('Please enter a valid daily limit (minimum ₹50)', 'error');
+            }
+        }
+
+        function updateTargetProgress() {
+            const targetProgressEl = document.getElementById('targetProgress');
+            const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const currentSavings = Math.max(0, monthlyBudget - totalSpent);
+            
+            // Get today's expenses
+            const today = new Date().toDateString();
+            const todayExpenses = expenses.filter(expense => 
+                new Date(expense.date).toDateString() === today
+            );
+            const todaySpent = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+            let progressHTML = '';
+
+            // Savings Target Progress
+            if (savingsTarget > 0) {
+                const savingsPercent = Math.min((currentSavings / savingsTarget) * 100, 100);
+                const savingsStatus = currentSavings >= savingsTarget ? 'success' : 
+                                    currentSavings >= savingsTarget * 0.7 ? 'warning' : 'danger';
+                
+                progressHTML += `
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">💰 Savings Progress</span>
+                            <span class="text-sm font-semibold ${savingsStatus === 'success' ? 'text-success' : savingsStatus === 'warning' ? 'text-accent' : 'text-danger'}">${savingsPercent.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                            <div class="h-2 rounded-full transition-all duration-500 ${savingsStatus === 'success' ? 'bg-success' : savingsStatus === 'warning' ? 'bg-accent' : 'bg-danger'}" 
+                                 style="width: ${Math.min(savingsPercent, 100)}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-600">₹${currentSavings.toLocaleString('en-IN')} saved of ₹${savingsTarget.toLocaleString('en-IN')} target</p>
+                    </div>
+                `;
+            }
+
+            // Daily Limit Progress
+            if (dailyLimit > 0) {
+                const dailyPercent = Math.min((todaySpent / dailyLimit) * 100, 100);
+                const dailyStatus = todaySpent <= dailyLimit ? 'success' : 
+                                  todaySpent <= dailyLimit * 1.2 ? 'warning' : 'danger';
+                
+                progressHTML += `
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">📅 Today's Spending</span>
+                            <span class="text-sm font-semibold ${dailyStatus === 'success' ? 'text-success' : dailyStatus === 'warning' ? 'text-accent' : 'text-danger'}">${dailyPercent.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                            <div class="h-2 rounded-full transition-all duration-500 ${dailyStatus === 'success' ? 'bg-success' : dailyStatus === 'warning' ? 'bg-accent' : 'bg-danger'}" 
+                                 style="width: ${Math.min(dailyPercent, 100)}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-600">₹${todaySpent.toLocaleString('en-IN')} spent of ₹${dailyLimit.toLocaleString('en-IN')} daily limit</p>
+                        ${todaySpent > dailyLimit ? '<p class="text-xs text-danger mt-1">⚠️ Daily limit exceeded!</p>' : ''}
+                    </div>
+                `;
+            }
+
+            // Budget Usage Progress
+            const budgetPercent = Math.min((totalSpent / monthlyBudget) * 100, 100);
+            const budgetStatus = budgetPercent <= 80 ? 'success' : budgetPercent <= 95 ? 'warning' : 'danger';
+            
+            progressHTML += `
+                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-700">📊 Budget Usage</span>
+                        <span class="text-sm font-semibold ${budgetStatus === 'success' ? 'text-success' : budgetStatus === 'warning' ? 'text-accent' : 'text-danger'}">${budgetPercent.toFixed(1)}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div class="h-2 rounded-full transition-all duration-500 ${budgetStatus === 'success' ? 'bg-success' : budgetStatus === 'warning' ? 'bg-accent' : 'bg-danger'}" 
+                             style="width: ${Math.min(budgetPercent, 100)}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-600">₹${totalSpent.toLocaleString('en-IN')} used of ₹${monthlyBudget.toLocaleString('en-IN')} budget</p>
+                </div>
+            `;
+
+            if (progressHTML === '') {
+                progressHTML = '<p class="text-sm text-gray-500 text-center py-4">Set targets above to track your progress</p>';
+            }
+
+            targetProgressEl.innerHTML = progressHTML;
+        }
+
+        // Dashboard updates
+        function updateDashboard() {
+            const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const remaining = monthlyBudget - totalSpent;
+            const currentDay = new Date().getDate();
+            const dailyAverage = currentDay > 0 ? totalSpent / currentDay : 0;
+            
+            document.getElementById('budgetDisplay').textContent = `₹${monthlyBudget.toLocaleString('en-IN')}`;
+            document.getElementById('spentDisplay').textContent = `₹${totalSpent.toLocaleString('en-IN')}`;
+            document.getElementById('remainingDisplay').textContent = `₹${remaining.toLocaleString('en-IN')}`;
+            document.getElementById('averageDisplay').textContent = `₹${Math.round(dailyAverage).toLocaleString('en-IN')}`;
+            
+            // Update progress bar
+            const progressPercent = Math.min((totalSpent / monthlyBudget) * 100, 100);
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+            document.getElementById('progressText').textContent = `${progressPercent.toFixed(1)}% used`;
+            
+            // Update remaining color
+            const remainingEl = document.getElementById('remainingDisplay');
+            if (remaining < 0) {
+                remainingEl.className = 'text-2xl font-bold text-danger';
+            } else if (remaining < monthlyBudget * 0.2) {
+                remainingEl.className = 'text-2xl font-bold text-accent';
+            } else {
+                remainingEl.className = 'text-2xl font-bold text-success';
+            }
+        }
+
+        // Chart management
+        function initChart() {
+            const ctx = document.getElementById('spendingChart').getContext('2d');
+            spendingChart = new Chart(ctx, {
+                type: currentChartType,
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#e5e7eb',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `₹${value.toLocaleString('en-IN')} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1000
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!spendingChart) return;
+            
+            const categoryTotals = {};
+            expenses.forEach(expense => {
+                categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+            });
+
+            const labels = Object.keys(categoryTotals).map(cat => categories[cat].name);
+            const data = Object.values(categoryTotals);
+            const colors = Object.keys(categoryTotals).map(cat => categories[cat].color);
+
+            spendingChart.data.labels = labels;
+            spendingChart.data.datasets[0].data = data;
+            spendingChart.data.datasets[0].backgroundColor = colors;
+            spendingChart.update();
+
+            // Update custom legend
+            updateChartLegend(categoryTotals);
+        }
+
+        function updateChartLegend(categoryTotals) {
+            const legendEl = document.getElementById('chartLegend');
+            const total = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+            
+            if (total === 0) {
+                legendEl.innerHTML = '<p class="col-span-full text-center text-gray-500 text-sm">No expenses to display</p>';
+                return;
+            }
+
+            legendEl.innerHTML = Object.entries(categoryTotals).map(([cat, amount]) => {
+                const percentage = ((amount / total) * 100).toFixed(1);
+                return `
+                    <div class="flex items-center space-x-2 p-2 rounded-lg bg-gray-50">
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${categories[cat].color}"></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-gray-900 truncate">${categories[cat].name}</p>
+                            <p class="text-xs text-gray-500">₹${amount.toLocaleString('en-IN')} (${percentage}%)</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchChart(type) {
+            currentChartType = type;
+            
+            // Update button states
+            document.getElementById('pieBtn').className = type === 'pie' 
+                ? 'px-3 py-1 text-sm font-medium rounded-lg bg-primary text-white'
+                : 'px-3 py-1 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors';
+            
+            document.getElementById('doughnutBtn').className = type === 'doughnut'
+                ? 'px-3 py-1 text-sm font-medium rounded-lg bg-primary text-white'
+                : 'px-3 py-1 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors';
+            
+            // Recreate chart
+            spendingChart.destroy();
+            initChart();
+            updateChart();
+        }
+
+        // Expense list rendering
+        function renderExpenses() {
+            const expensesList = document.getElementById('expensesList');
+            
+            if (expenses.length === 0) {
+                expensesList.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p>No expenses recorded yet</p>
+                        <p class="text-sm">Add your first expense to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            expensesList.innerHTML = expenses.slice(0, 10).map(expense => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg" 
+                             style="background-color: ${categories[expense.category].color}20; color: ${categories[expense.category].color}">
+                            ${categories[expense.category].icon}
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">${expense.description}</p>
+                            <p class="text-sm text-gray-500">${categories[expense.category].name} • ${expense.displayDate}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="font-semibold text-danger">-₹${expense.amount.toLocaleString('en-IN')}</span>
+                        <button onclick="deleteExpense(${expense.id})" 
+                                class="text-gray-400 hover:text-danger transition-colors p-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Utility functions
+        function deleteExpense(id) {
+            expenses = expenses.filter(expense => expense.id !== id);
+            localStorage.setItem('ft_expenses', JSON.stringify(expenses));
+            updateDashboard();
+            updateTargetProgress();
+            renderExpenses();
+            updateChart();
+            showNotification('Expense deleted successfully', 'success');
+        }
+
+        function clearAllExpenses() {
+            if (expenses.length === 0) return;
+            
+            if (confirm('Are you sure you want to delete all expenses? This action cannot be undone.')) {
+                expenses = [];
+                localStorage.setItem('ft_expenses', JSON.stringify(expenses));
+                updateDashboard();
+                updateTargetProgress();
+                renderExpenses();
+                updateChart();
+                showNotification('All expenses cleared', 'success');
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+            
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Initialize app
+        init();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981a4b36210dfb88',t:'MTc1ODI5NzYwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
